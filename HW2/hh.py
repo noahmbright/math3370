@@ -40,9 +40,10 @@ class HodgkinHuxley():
         """Channel gating kinetics. Functions of membrane voltage"""
         return 4.0*sp.exp(-(V+65.0) / 18.0)
 
-    def alpha_h(self, V):
+    def alpha_h(self, V, hyperpolarization = 0):
         """Channel gating kinetics. Functions of membrane voltage"""
-        return 0.07*sp.exp(-(V+65.0) / 20.0)
+        V_half = -65.0 - hyperpolarization
+        return 0.07*sp.exp(-(V-V_half) / 20.0)
 
     def beta_h(self, V):
         """Channel gating kinetics. Functions of membrane voltage"""
