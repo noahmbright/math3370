@@ -1,61 +1,59 @@
 import scipy as sp
+import numpy as np
 import pylab as plt
 from scipy.integrate import odeint
 
 class HodgkinHuxley():
-    """Full Hodgkin-Huxley Model implemented in Python"""
+    C_m  =   1.0 # uF/cm^2
 
-    I_0  =   8.0
-    """applied current in uA/cm^2"""
-    
-    C_m  =   1.0
-    """membrane capacitance, in uF/cm^2"""
-
+    #mS/cm^2
     g_Na = 120.0
-    """Sodium (Na) maximum conductances, in mS/cm^2"""
-
     g_K  =  36.0
-    """Postassium (K) maximum conductances, in mS/cm^2"""
-
     g_L  =   0.3
-    """Leak maximum conductances, in mS/cm^2"""
 
+    # mV
     E_Na =  50.0
-    """Sodium (Na) Nernst reversal potentials, in mV"""
-
     E_K  = -77.0
-    """Postassium (K) Nernst reversal potentials, in mV"""
-
     E_L  = -54.387
-    """Leak Nernst reversal potentials, in mV"""
-
-    t = sp.arange(0.0, 450.0, 0.01)
-    """ The time to integrate over """
+    
+    t = np.arange(0.0, 450.0, 0.01)
+    
 
     def alpha_m(self, V):
         """Channel gating kinetics. Functions of membrane voltage"""
-        return 0.1*(V+40.0)/(1.0 - sp.exp(-(V+40.0) / 10.0))
+        return 0.1*(V+40.0)/(1.0 - np.exp(-(V+40.0) / 10.0))
 
     def beta_m(self, V):
         """Channel gating kinetics. Functions of membrane voltage"""
-        return 4.0*sp.exp(-(V+65.0) / 18.0)
+        return 4.0*np.exp(-(V+65.0) / 18.0)
 
     def alpha_h(self, V, hyperpolarization = 0):
         """Channel gating kinetics. Functions of membrane voltage"""
         V_half = -65.0 - hyperpolarization
-        return 0.07*sp.exp(-(V-V_half) / 20.0)
+        return 0.07*np.exp(-(V-V_half) / 20.0)
 
-    def beta_h(self, V):
+    def beta_h(self, V, hyperpolarization = 0):
         """Channel gating kinetics. Functions of membrane voltage"""
-        return 1.0/(1.0 + sp.exp(-(V+35.0) / 10.0))
+        V_half = -35.0 - hyperpolarization
+        return 1.0/(1.0 + np.exp(-(V-V_half) / 10.0))
 
     def alpha_n(self, V):
         """Channel gating kinetics. Functions of membrane voltage"""
-        return 0.01*(V+55.0)/(1.0 - sp.exp(-(V+55.0) / 10.0))
+        return 0.01*(V+55.0)/(1.0 - np.exp(-(V+55.0) / 10.0))
 
     def beta_n(self, V):
         """Channel gating kinetics. Functions of membrane voltage"""
-        return 0.125*sp.exp(-(V+65) / 80.0)
+        return 0.125*np.exp(-(V+65) / 80.0)
+
+    def m_inf(self, V):
+        return self.alpha_m(V)/(self.alpha_m(V) + self.beta_m(V))
+
+    def n_inf(self, V):
+        return self.alpha_n(V)/(self.alpha_n(V) + self.beta_n(V))
+
+    def h_inf(self, V, hyperpolarization=0):
+        return self.alpha_h(V, hyperpolarization)/(self.alpha_h(V, hyperpolarization) + self.beta_h(V, hyperpolarization))
+
     def I_Na(self, V, m, h):
         """
         Membrane current (in uA/cm^2)
@@ -90,7 +88,7 @@ class HodgkinHuxley():
         """
         return self.g_L * (V - self.E_L)
 
-    def I_inj(self, t):
+    def I_inj(self, t, t_on = 100, I_p = 0.0, pulse_width = 0):
         """
         External Current
 
@@ -99,10 +97,10 @@ class HodgkinHuxley():
         |           step down to 0 uA/cm^2 at t>200
         |   this is a pulse of current and you should modify it
         """
-        return 2*(t>100) - 2*(t>105) 
+        return I_p*(t>t_on) - I_p*(t>t_on + pulse_width) 
 
     @staticmethod
-    def dALLdt(X, t, self):
+    def dALLdt(X, t, self, I_0, clamp = False):
         """
         Integrate
 
@@ -112,22 +110,30 @@ class HodgkinHuxley():
         """
         V, m, h, n = X
 
-        dVdt = (self.I_inj(t) + self.I_0 - self.I_Na(V, m, h) - self.I_K(V, n) - self.I_L(V)) / self.C_m
+        if clamp:
+            dVdt = 0
+        else:
+            dVdt = (self.I_inj(t) + I_0 - self.I_Na(V, m, h) - self.I_K(V, n) - self.I_L(V)) / self.C_m
         dmdt = self.alpha_m(V)*(1.0-m) - self.beta_m(V)*m
         dhdt = self.alpha_h(V)*(1.0-h) - self.beta_h(V)*h
         dndt = self.alpha_n(V)*(1.0-n) - self.beta_n(V)*n
         return dVdt, dmdt, dhdt, dndt
+
+    def integrate(self, I_0 = 8, ics = [-60, 0.09, 0.4, 0.4], clamp = False):
+        return odeint(self.dALLdt, ics, self.t, args=(self, I_0, clamp)) # V, m , h, n
+        
 
     def Main(self):
         """
         Main demo for the Hodgkin Huxley neuron model
         """
 
-        X = odeint(self.dALLdt, [-60, 0.09, 0.4, 0.4], self.t, args=(self,))
+        X = self.integrate(I_0 = 20)
         V = X[:,0]
         m = X[:,1]
         h = X[:,2]
         n = X[:,3]
+        
         ina = self.I_Na(V, m, h)
         ik = self.I_K(V, n)
         il = self.I_L(V)
