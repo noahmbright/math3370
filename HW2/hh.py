@@ -16,7 +16,7 @@ class HodgkinHuxley():
     E_K  = -77.0
     E_L  = -54.387
     
-    t = np.arange(0.0, 450.0, 0.01)
+    t = np.arange(0.0, 20.0, 0.01)
     
 
     def alpha_m(self, V):
@@ -88,6 +88,7 @@ class HodgkinHuxley():
         """
         return self.g_L * (V - self.E_L)
 
+    # TODO modify dAlldt to take arguments that control the injected current
     def I_inj(self, t, t_on = 100, I_p = 0.0, pulse_width = 0):
         """
         External Current
