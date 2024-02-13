@@ -16,7 +16,7 @@ class HodgkinHuxley():
     E_K  = -77.0
     E_L  = -54.387
     
-    t = np.arange(0.0, 20.0, 0.01)
+    t = np.arange(0.0, 400.0, 0.01)
     
 
     def alpha_m(self, V):

@@ -1,0 +1,35 @@
+# Destexhe and Pare
+# J. Neurophys 1999 
+
+# sodium
+am(v)=-.32*(v-vt-13)/(exp(-(v-vt-13)/4)-1)
+par i=0,gkm=2
+# shifted to acct for threshold
+num vt=-58,vs=-10
+bm(v)=.28*(v-vt-40)/(exp((v-vt-40)/5)-1)
+ah(v)=.128*exp(-(v-vt-vs-17)/18)
+bh(v)=4/(1+exp(-(v-vt-vs-40)/5))
+ina(v,m,h)=gna*m^3*h*(v-ena)
+par gna=120,ena=55
+# delayed rectifier
+an(v)=-.032*(v-vt-15)/(exp(-(v-vt-15)/5)-1)
+bn(v)=.5*exp(-(v-vt-10)/40)
+ikdr(v,n)=gk*n^4*(v-ek)
+par gk=100,ek=-85
+# slow potassium current
+akm(v)=.0001*(v+30)/(1-exp(-(v+30)/9))
+bkm(v)=-.0001*(v+30)/(1-exp((v+30)/9))
+ikm(v,m)=gkm*m*(v-ek)
+#
+v'=(I-gl*(v-el)-ikdr(v,n)-ina(v,m,h)-ikm(v,mk))/cm
+m'=am(v)*(1-m)-bm(v)*m
+h'=ah(v)*(1-h)-bh(v)*h
+n'=an(v)*(1-n)-bn(v)*n
+mk'=akm(v)*(1-mk)-bkm(v)*mk
+init v=-73.87,m=0,h=1,n=.002,mk=.0075
+# passive stuff
+par gl=.019,el=-65,cm=1
+# numerics stuff
+@ total=1000,dt=.25,meth=qualrk,xhi=1000,maxstor=10000
+@ bound=1000,ylo=-85,yhi=-50
+done
