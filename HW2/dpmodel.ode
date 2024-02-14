@@ -32,4 +32,4 @@ par gl=.019,el=-65,cm=1
 # numerics stuff
 @ total=1000,dt=.25,meth=qualrk,xhi=1000,maxstor=10000
 @ bound=1000,ylo=-85,yhi=-50
-done
+doneasd
